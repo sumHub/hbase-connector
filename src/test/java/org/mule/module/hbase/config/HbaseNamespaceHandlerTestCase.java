@@ -12,7 +12,6 @@
 
 package org.mule.module.hbase.config;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -21,16 +20,13 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.apache.hadoop.hbase.client.Result;
 import org.mule.api.MuleEvent;
 import org.mule.api.processor.MessageProcessor;
-import org.mule.api.transport.PropertyScope;
 import org.mule.module.hbase.api.HBaseService;
 import org.mule.tck.FunctionalTestCase;
+import org.mule.wrapper.hbase.ResultWrapper;
 
-import java.util.HashMap;
-
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.RowLock;
 
 public class HbaseNamespaceHandlerTestCase extends FunctionalTestCase
 {
@@ -51,7 +47,7 @@ public class HbaseNamespaceHandlerTestCase extends FunctionalTestCase
 
     public void testFlowGet() throws Exception
     {
-        final Result mockResult = new Result();
+        final ResultWrapper mockResult = new ResultWrapper();
         when(mockService.get(eq("t1"), eq("r1"), eq("f1"), eq("q1"), anyInt(), anyLong())).thenReturn(mockResult);
 
         final MessageProcessor flow = lookupFlowConstruct("flowGet");
@@ -69,8 +65,7 @@ public class HbaseNamespaceHandlerTestCase extends FunctionalTestCase
         final MuleEvent event = getTestEvent(new Exception());
         flow.process(event);
 
-        verify(mockService).put(eq("t1"), eq("r1"), eq("f1"), eq("q1"), anyLong(), eq("v1"), anyBoolean(),
-            any(RowLock.class));
+        verify(mockService).put(eq("t1"), eq("r1"), eq("f1"), eq("q1"), anyLong(), eq("v1"), anyBoolean());
     }
 
     private MessageProcessor lookupFlowConstruct(String name)

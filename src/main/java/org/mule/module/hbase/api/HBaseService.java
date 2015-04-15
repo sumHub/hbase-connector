@@ -12,7 +12,8 @@ package org.mule.module.hbase.api;
 import java.util.Map;
 
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.RowLock;
+import org.mule.wrapper.hbase.ResultWrapper;
+//import org.apache.hadoop.hbase.client.RowLock;
 
 /**
  * The service exposes several actions to manage and use an HBase database
@@ -79,7 +80,7 @@ public interface HBaseService
     void deleteColumn(String tableName, String columnFamilyName);
 
     // ------------ Row Operations
-    Result get(String tableName, String rowKey,String columnFamilyName, String columnQualifier, Integer maxVersions, Long timestamp);
+    ResultWrapper get(String tableName, String rowKey,String columnFamilyName, String columnQualifier, Integer maxVersions, Long timestamp);
 
     /**
      * Saves the value at the specified cell (row + family:qualifier + timestamp)
@@ -92,8 +93,8 @@ public interface HBaseService
              String columnQualifier,
              Long timestamp,
              Object value,
-             boolean writeToWAL,
-             RowLock lock);
+             boolean writeToWAL
+             );
 
     /** @return true only if the row exists and is not null */
     boolean exists(String tableName, String row, Integer maxVersions, Long timestamp);
@@ -117,8 +118,8 @@ public interface HBaseService
                        String columnFamilyName,
                        String columnQualifier,
                        Long timestamp,
-                       boolean deleteAllVersions,
-                       RowLock lock);
+                       boolean deleteAllVersions
+                       );
 
     /**
      * Scan across all rows in a table.
@@ -184,8 +185,8 @@ public interface HBaseService
                         String putColumnQualifier,
                         Long putTimestamp,
                         Object value,
-                        boolean putWriteToWAL,
-                        RowLock putLock);
+                        boolean putWriteToWAL
+                        );
 
     /**
      * Atomically checks if a row/family/qualifier value matches the expected value.
@@ -201,8 +202,7 @@ public interface HBaseService
                            String deleteColumnFamilyName,
                            String deleteColumnQualifier,
                            Long deleteTimestamp,
-                           Boolean deleteAllVersions,
-                           RowLock deleteLock);
+                           Boolean deleteAllVersions);
 
     /**
      * Locks a row in a table. You should eventually call
@@ -210,10 +210,10 @@ public interface HBaseService
      * 
      * @return the lock
      */
-    RowLock lock(String tableName, String row);
+ //   RowLock lock(String tableName, String row);
 
     /** Unlock the row */
-    void unlock(String tableName, RowLock lock);
+ //   void unlock(String tableName, RowLock lock);
 
     // ------------ Configuration
     /**

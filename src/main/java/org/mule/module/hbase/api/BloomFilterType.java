@@ -9,7 +9,7 @@
 
 package org.mule.module.hbase.api;
 
-import org.apache.hadoop.hbase.regionserver.StoreFile.BloomType;
+import org.apache.hadoop.hbase.regionserver.BloomType;
 
 /**
  * Bloom Filter Types used by hbase

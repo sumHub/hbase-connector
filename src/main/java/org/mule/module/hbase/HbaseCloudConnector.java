@@ -18,18 +18,6 @@ is * Mule HBase Cloud Connector
 
 package org.mule.module.hbase;
 
-import org.mule.api.annotations.Configurable;
-import org.mule.api.annotations.Module;
-import org.mule.api.annotations.Processor;
-import org.mule.api.annotations.param.Default;
-import org.mule.api.annotations.param.Optional;
-import org.mule.api.lifecycle.Initialisable;
-import org.mule.api.lifecycle.InitialisationException;
-import org.mule.module.hbase.api.BloomFilterType;
-import org.mule.module.hbase.api.CompressionType;
-import org.mule.module.hbase.api.HBaseService;
-import org.mule.module.hbase.api.impl.RPCHBaseService;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +25,19 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.RowLock;
+//removed row level locking as it is been removed after Hbase 0.94 version. Please check https://issues.apache.org/jira/browse/HBASE-7315
+//import org.apache.hadoop.hbase.client.RowLock;
+import org.mule.api.annotations.Configurable;
+import org.mule.api.annotations.Module;
+import org.mule.api.annotations.Processor;
+import org.mule.api.annotations.param.Default;
+import org.mule.api.annotations.param.Optional;
+import org.mule.api.lifecycle.InitialisationException;
+import org.mule.module.hbase.api.BloomFilterType;
+import org.mule.module.hbase.api.CompressionType;
+import org.mule.module.hbase.api.HBaseService;
+import org.mule.module.hbase.api.impl.RPCHBaseService;
+import org.mule.wrapper.hbase.ResultWrapper;
 
 /**
  * <p>
@@ -301,7 +301,7 @@ public class HbaseCloudConnector {
 	 * @return the {@link Result}
 	 */
 	@Processor
-	public Result getValues(final String tableName, final String rowKey,  @Optional final String columnFamilyName,
+	public ResultWrapper getValues(final String tableName, final String rowKey,  @Optional final String columnFamilyName,
 			@Optional final String columnQualifier, @Optional final Integer maxVersions, @Optional final Long timestamp) {
 		return facade.get(tableName, rowKey, columnFamilyName, columnQualifier, maxVersions, timestamp);
 	}
@@ -329,14 +329,11 @@ public class HbaseCloudConnector {
 	 * @param writeToWAL
 	 *            set it to false means that in a fail scenario, you will lose
 	 *            any increments that have not been flushed.
-	 * @param lock
-	 *            a optional {@link RowLock}
 	 */
 	@Processor
 	public void putValue(final String tableName, final String rowKey, final String columnFamilyName, final String columnQualifier,
-			@Optional final Long timestamp, final Object value, @Optional @Default("true") final boolean writeToWAL,
-			@Optional final RowLock lock) {
-		facade.put(tableName, rowKey, columnFamilyName, columnQualifier, timestamp, value, writeToWAL, lock);
+			@Optional final Long timestamp, final Object value, @Optional @Default("true") final boolean writeToWAL) {
+		facade.put(tableName, rowKey, columnFamilyName, columnQualifier, timestamp, value, writeToWAL);
 	}
 
 	/**
@@ -365,14 +362,12 @@ public class HbaseCloudConnector {
 	 *            if all versions should be deleted,or only those more recent
 	 *            than the deleteTimestamp. Only has sense if
 	 *            deleteColumnFamilyName and deleteColumnQualifier are specified
-	 * @param lock
-	 *            an optional {@link RowLock}
 	 */
 	@Processor
 	public void deleteValues(final String tableName, final String rowKey, @Optional final String columnFamilyName,
 			@Optional final String columnQualifier, @Optional final Long timestamp,
-			@Optional @Default("false") final boolean deleteAllVersions, @Optional final RowLock lock) {
-		facade.delete(tableName, rowKey, columnFamilyName, columnQualifier, timestamp, deleteAllVersions, lock);
+			@Optional @Default("false") final boolean deleteAllVersions) {
+		facade.delete(tableName, rowKey, columnFamilyName, columnQualifier, timestamp, deleteAllVersions);
 	}
 
 	/**
@@ -488,17 +483,14 @@ public class HbaseCloudConnector {
 	 * @param writeToWAL
 	 *            set it to false means that in a fail scenario, you will lose
 	 *            any increments that have not been flushed.
-	 * @param lock
-	 *            and optional {@link RowLock}
 	 * @return true if the new put was executed, false otherwise
 	 */
 	@Processor
 	public boolean checkAndPutValue(final String tableName, final String rowKey, final String checkColumnFamilyName,
 			final String checkColumnQualifier, final Object checkValue, final String putColumnFamilyName, final String putColumnQualifier,
-			@Optional final Long putTimestamp, final Object value, @Optional @Default("true") final boolean writeToWAL,
-			@Optional final RowLock lock) {
+			@Optional final Long putTimestamp, final Object value, @Optional @Default("true") final boolean writeToWAL) {
 		return facade.checkAndPut(tableName, rowKey, checkColumnFamilyName, checkColumnQualifier, checkValue, putColumnFamilyName,
-				putColumnQualifier, putTimestamp, value, writeToWAL, lock);
+				putColumnQualifier, putTimestamp, value, writeToWAL);
 	}
 
 	/**
@@ -535,17 +527,15 @@ public class HbaseCloudConnector {
 	 *            if all versions should be deleted,or only those more recent
 	 *            than the deleteTimestamp. Only has sense if
 	 *            deleteColumnFamilyName and deleteColumnQualifier are specified
-	 * @param lock
-	 *            an optional {@link RowLock}
 	 * @return true if the new delete was executed, false otherwise
 	 */
 	@Processor
 	public boolean checkAndDeleteValue(final String tableName, final String rowKey, final String checkColumnFamilyName,
 			final String checkColumnQualifier, final Object checkValue, final String deleteColumnFamilyName,
 			final String deleteColumnQualifier, @Optional final Long deleteTimestamp,
-			@Optional @Default("false") final boolean deleteAllVersions, @Optional final RowLock lock) {
+			@Optional @Default("false") final boolean deleteAllVersions) {
 		return facade.checkAndDelete(tableName, rowKey, checkColumnFamilyName, checkColumnQualifier, checkValue, deleteColumnFamilyName,
-				deleteColumnQualifier, deleteTimestamp, deleteAllVersions, lock);
+				deleteColumnQualifier, deleteTimestamp,deleteAllVersions);
 	}
 
 	// ------------ Configuration

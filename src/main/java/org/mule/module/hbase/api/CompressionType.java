@@ -8,7 +8,7 @@
 
 package org.mule.module.hbase.api;
 
-import org.apache.hadoop.hbase.io.hfile.Compression.Algorithm;
+import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 
 /**
  * Compression types used by HBase

@@ -5,15 +5,28 @@
   <artifactId>mule-module-hbase</artifactId>
   <packaging>mule-module</packaging>
   <name>Mule Hbase Cloud Connector</name>
-  <version>2.0.3-SNAPSHOT</version>
+  <version>3.0.0-SNAPSHOT</version>
   <description>Mule Cloud connector to Hbase</description>
   <url>http://www.muleforge.org/projects/mule-module-hbase</url>
-
+<repositories>
+    <repository>
+      <id>cloudera</id>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+    </repository>
+	    
+        <repository>
+            <id>mulesoft-releases</id>
+            <name>Mulesoft Releases Repository</name>
+            <url>http://repository.mulesoft.org/releases/</url>
+            <layout>default</layout>
+        </repository>
+    
+  </repositories>
   <properties>
-    <hbase.version>0.92.1</hbase.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <hbase.version>0.98.6-cdh5.3.2</hbase.version>
+    <slf4j.version>1.7.5</slf4j.version>
     <spring.version>3.1.1.RELEASE</spring.version>
-    <hadoop.version>0.20.2</hadoop.version>
+    <hadoop.version>2.5.0-cdh5.3.2</hadoop.version>
     <category>Community</category>
     <licensePath>LICENSE.md</licensePath>
     <devkit.studio.package.skip>false</devkit.studio.package.skip>
@@ -22,14 +35,30 @@
   <parent>
     <groupId>org.mule.tools.devkit</groupId>
     <artifactId>mule-devkit-parent</artifactId>
-    <version>3.3.2</version>
+    <version>3.6.1</version>
+
   </parent>
 
   <dependencies>
     <!-- HBase Dependencies -->
     <dependency>
       <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
+      <artifactId>hbase-client</artifactId>
+      <version>${hbase.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+	<dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-common</artifactId>
       <version>${hbase.version}</version>
       <exclusions>
         <exclusion>
@@ -49,10 +78,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-core</artifactId>
-      <version>${hadoop.version}</version>
-    </dependency>
+     <groupId>org.apache.hadoop</groupId>
+     <artifactId>hadoop-client</artifactId>
+     <version>${hadoop.version}</version>
+	 <exclusions>
+    <exclusion>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+    </exclusion>
+	</exclusions> 
+   </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
@@ -82,21 +117,5 @@
     </dependency>
   </dependencies>
 
-    <repositories>
-        <repository>
-            <id>mulesoft-releases</id>
-            <name>Mulesoft Releases Repository</name>
-            <url>http://repository.mulesoft.org/releases/</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
-  <scm>
-    <connection>scm:git:git://github.com:mulesoft/hbase-connector.git</connection>
-    <developerConnection>
-            scm:git:git@github.com:mulesoft/hbase-connector.git
-        </developerConnection>
-    <url>http://github.com/mulesoft/hbase-connector</url>
-  </scm>
 
 </project>

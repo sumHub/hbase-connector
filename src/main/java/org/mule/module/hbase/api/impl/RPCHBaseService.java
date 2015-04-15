@@ -14,6 +14,7 @@ import org.mule.module.hbase.api.CompressionType;
 import org.mule.module.hbase.api.HBaseService;
 import org.mule.module.hbase.api.HBaseServiceException;
 import org.mule.transport.NullPayload;
+import org.mule.wrapper.hbase.ResultWrapper;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -22,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.UnhandledException;
 import org.apache.commons.lang.Validate;
@@ -43,7 +45,7 @@ import org.apache.hadoop.hbase.client.HTableInterfaceFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.RowLock;
+//import org.apache.hadoop.hbase.client.RowLock;
 import org.apache.hadoop.hbase.client.Scan;
 
 /**
@@ -421,21 +423,24 @@ public class RPCHBaseService implements HBaseService
     }
 
     // ------------ Row Operations
+    //Moving Code to use ResultWrapper class instead of Hbase client Result object, because there is issue with Mule Devkit where same class names exists in different packages in a generated class
     /** @see HBaseService#get(String, String, Integer, Long) */
-    public Result get(String tableName, final String rowKey, final String columnFamilyName, final String columnQualifier, final Integer maxVersions, final Long timestamp)
+    public ResultWrapper get(String tableName, final String rowKey, final String columnFamilyName, final String columnQualifier, final Integer maxVersions, final Long timestamp)
     {
-        return doWithHTable(tableName, new TableCallback<Result>()
+        return doWithHTable(tableName, new TableCallback<ResultWrapper>()
         {
-            public Result doWithHBaseAdmin(HTableInterface hTable) throws Exception
+            public ResultWrapper doWithHBaseAdmin(HTableInterface hTable) throws Exception
             {
-                return hTable.get(createGet(rowKey, columnFamilyName, columnQualifier, maxVersions, timestamp));
+            	ResultWrapper rw=new ResultWrapper();
+            	//just a workaround until Mule Devkit fixes this issue
+                BeanUtils.copyProperties(hTable.get(createGet(rowKey, columnFamilyName, columnQualifier, maxVersions, timestamp)),rw);
+                return rw;
             }
         });
     }
 
     /**
-     * @see HBaseService#put(String, String, String, String, Long, String, Boolean,
-     *      RowLock)
+     * @see HBaseService#put(String, String, String, String, Long, String, Boolean)
      */
     public void put(String tableName,
                     final String row,
@@ -443,15 +448,14 @@ public class RPCHBaseService implements HBaseService
                     final String columnQualifier,
                     final Long timestamp,
                     final Object value,
-                    final boolean writeToWAL,
-                    final RowLock lock)
+                    final boolean writeToWAL)
     {
         doWithHTable(tableName, new TableCallback<Void>()
         {
             public Void doWithHBaseAdmin(HTableInterface hTable) throws Exception
             {
                 final Put put = createPut(row, columnFamilyName, columnQualifier, timestamp, value,
-                    writeToWAL, lock);
+                    writeToWAL);
                 hTable.put(put);
                 return null;
             }
@@ -462,28 +466,26 @@ public class RPCHBaseService implements HBaseService
     public boolean exists(String tableName, final String row, final Integer maxVersions, final Long timestamp)
 
     {
-        final Result result = get(tableName, row, null, null, maxVersions, timestamp);
+        final ResultWrapper result = get(tableName, row, null, null, maxVersions, timestamp);
         return result != null && !result.isEmpty();
     }
 
     /**
-     * @see HBaseService#delete(String, String, String, String, Long, Boolean,
-     *      RowLock)
+     * @see HBaseService#delete(String, String, String, String, Long, Boolean)
      */
     public void delete(final String tableName,
                        final String row,
                        final String columnFamilyName,
                        final String columnQualifier,
                        final Long timestamp,
-                       final boolean deleteAllVersions,
-                       final RowLock lock)
+                       final boolean deleteAllVersions)
     {
         doWithHTable(tableName, new TableCallback<Void>()
         {
             public Void doWithHBaseAdmin(HTableInterface hTable) throws Exception
             {
                 final Delete delete = createDelete(row, columnFamilyName, columnQualifier, timestamp,
-                    deleteAllVersions, lock);
+                    deleteAllVersions);
                 hTable.delete(delete);
                 return null;
             }
@@ -674,7 +676,7 @@ public class RPCHBaseService implements HBaseService
 
     /**
      * @see HBaseService#checkAndPut(String, String, String, String, String, String,
-     *      String, Long, String, Boolean, RowLock)
+     *      String, Long, String, Boolean)
      */
     public boolean checkAndPut(final String tableName,
                                final String row,
@@ -685,15 +687,14 @@ public class RPCHBaseService implements HBaseService
                                final String putColumnQualifier,
                                final Long putTimestamp,
                                final Object putValue,
-                               final boolean putWriteToWAL,
-                               final RowLock putLock)
+                               final boolean putWriteToWAL)
     {
         return doWithHTable(tableName, new TableCallback<Boolean>()
         {
             public Boolean doWithHBaseAdmin(HTableInterface hTable) throws Exception
             {
                 final Put put = createPut(row, putColumnFamilyName, putColumnQualifier, putTimestamp,
-                    putValue, putWriteToWAL, putLock);
+                    putValue, putWriteToWAL);
                 return hTable.checkAndPut(row.getBytes(UTF8), checkColumnFamilyName.getBytes(UTF8),
                     checkColumnQualifier.getBytes(UTF8), toByteArray(checkValue), put);
             }
@@ -702,7 +703,7 @@ public class RPCHBaseService implements HBaseService
 
     /**
      * @see HBaseService#checkAndDelete(String, String, String, String, String,
-     *      String, String, Long, Boolean, RowLock)
+     *      String, String, Long, Boolean)
      */
     public boolean checkAndDelete(final String tableName,
                                   final String row,
@@ -712,14 +713,13 @@ public class RPCHBaseService implements HBaseService
                                   final String deleteColumnFamilyName,
                                   final String deleteColumnQualifier,
                                   final Long deleteTimestamp,
-                                  final Boolean deleteAllVersions,
-                                  final RowLock deleteLock)
+                                  final Boolean deleteAllVersions)
     {
         return doWithHTable(tableName, new TableCallback<Boolean>()
         {
             public Boolean doWithHBaseAdmin(HTableInterface hTable) throws Exception
             {
-            	final Delete delete = createDelete(row, deleteColumnFamilyName, deleteColumnQualifier, deleteTimestamp, deleteAllVersions, deleteLock);
+            	final Delete delete = createDelete(row, deleteColumnFamilyName, deleteColumnQualifier, deleteTimestamp, deleteAllVersions);
             	byte[] byteValue = null;
             	if(checkValue != null && !(checkValue instanceof NullPayload)){
             		byteValue = toByteArray(checkValue);
@@ -728,9 +728,9 @@ public class RPCHBaseService implements HBaseService
             }
         });
     }
-
+//NO longer Hbase supports Client locking https://issues.apache.org/jira/browse/HBASE-7315
     /** @see HBaseService#lock(String, String) */
-    public RowLock lock(final String tableName, final String row)
+  /*  public RowLock lock(final String tableName, final String row)
     {
         return doWithHTable(tableName, new TableCallback<RowLock>()
         {
@@ -739,10 +739,10 @@ public class RPCHBaseService implements HBaseService
                 return hTable.lockRow(row.getBytes(UTF8));
             }
         });
-    }
+    }*/
 
     /** @see HBaseService#unlock(String, RowLock) */
-    public void unlock(final String tableName, final RowLock lock)
+    /*public void unlock(final String tableName, final RowLock lock)
     {
         doWithHTable(tableName, new TableCallback<Void>()
         {
@@ -752,7 +752,7 @@ public class RPCHBaseService implements HBaseService
                 return null;
             }
         });
-    }
+    }*/
 
     // ------------ Configuration
     /** @see HBaseService#addProperties(Map) */
@@ -819,18 +819,10 @@ public class RPCHBaseService implements HBaseService
                           final String columnQualifier,
                           final Long timestamp,
                           final Object value,
-                          final boolean writeToWAL,
-                          final RowLock lock)
+                          final boolean writeToWAL)
     {
         final Put put;
-        if (lock == null)
-        {
             put = new Put(row.getBytes(UTF8));
-        }
-        else
-        {
-            put = new Put(row.getBytes(UTF8), lock);
-        }
         if (timestamp == null)
         {
             put.add(columnFamilyName.getBytes(UTF8), columnQualifier.getBytes(UTF8), toByteArray(value));
@@ -848,10 +840,9 @@ public class RPCHBaseService implements HBaseService
                                 final String columnFamilyName,
                                 final String columnQualifier,
                                 final Long timestamp,
-                                final boolean deleteAllVersions,
-                                final RowLock lock)
+                                final boolean deleteAllVersions)
     {
-        final Delete delete = new Delete(row.getBytes(UTF8), HConstants.LATEST_TIMESTAMP, lock);
+        final Delete delete = new Delete(row.getBytes(UTF8), HConstants.LATEST_TIMESTAMP);
         if (columnFamilyName != null)
         {
             if (columnQualifier != null)
@@ -902,7 +893,9 @@ public class RPCHBaseService implements HBaseService
         catch (ZooKeeperConnectionException e)
         {
             throw new HBaseServiceException(e);
-        }
+        } catch (IOException e) {
+        	throw new HBaseServiceException(e);
+		}
     }
 
     /** Release any resources allocated by {@link HBaseAdmin} */
@@ -910,7 +903,7 @@ public class RPCHBaseService implements HBaseService
     {
         if (hBaseAdmin != null)
         {
-            HConnectionManager.deleteConnection(hBaseAdmin.getConfiguration(), true);
+            HConnectionManager.deleteConnection(hBaseAdmin.getConfiguration());
         }
     }
 
